@@ -29,14 +29,18 @@ public class AnalystController {
     @GetMapping("/analyst/disputes/{id}")
     @Transactional(readOnly = true)
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("dispute", disputes.getDispute(id));
-        model.addAttribute("statuses", DisputeStatus.values());
+        var dispute = disputes.getDispute(id);
+        model.addAttribute("dispute", dispute);
+        model.addAttribute("statuses", dispute.getStatus().allowedTransitions());
         return "dispute";
     }
 
     @PostMapping("/analyst/disputes/{id}/status")
-    public String setStatus(@PathVariable Long id, @RequestParam DisputeStatus status) {
-        disputes.setStatus(id, status);
+    public String setStatus(
+            @PathVariable Long id,
+            @RequestParam DisputeStatus status,
+            @RequestParam(required = false) String resolutionNote) {
+        disputes.setStatus(id, status, resolutionNote);
         return "redirect:/analyst/disputes/" + id;
     }
 }

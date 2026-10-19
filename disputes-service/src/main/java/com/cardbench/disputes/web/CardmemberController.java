@@ -31,6 +31,7 @@ public class CardmemberController {
         model.addAttribute("cardmember", directory.getCardmember(id));
         model.addAttribute("cards", directory.cardsForCardmember(id));
         model.addAttribute("transactions", directory.listTransactions(id, null));
+        model.addAttribute("disputes", disputes.listDisputesForCardmember(id));
         return "cardmember";
     }
 
@@ -45,5 +46,16 @@ public class CardmemberController {
         var dispute = disputes.fileDispute(transactionId, amount, reason);
         redirectAttributes.addFlashAttribute("notice", "Dispute filed.");
         return "redirect:/analyst/disputes/" + dispute.getId();
+    }
+
+    @PostMapping("/cardmembers/{id}/disputes/{disputeId}/withdraw")
+    public String withdrawDispute(
+            @PathVariable String id,
+            @PathVariable Long disputeId,
+            RedirectAttributes redirectAttributes) {
+        directory.getCardmember(id);
+        disputes.withdrawDisputeForCardmember(disputeId, id);
+        redirectAttributes.addFlashAttribute("notice", "Dispute withdrawn.");
+        return "redirect:/cardmembers/" + id;
     }
 }

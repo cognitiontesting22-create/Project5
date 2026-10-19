@@ -14,5 +14,8 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
     List<Dispute> findAll();
 
     @EntityGraph(attributePaths = {"transaction", "transaction.card", "transaction.card.cardmember"})
+    List<Dispute> findAllByTransaction_Card_Cardmember_Id(String cardmemberId);
+
+    @EntityGraph(attributePaths = {"transaction", "transaction.card", "transaction.card.cardmember"})
     Optional<Dispute> findDetailedById(Long id);
 }

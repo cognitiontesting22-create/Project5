@@ -35,6 +35,9 @@ public class Dispute {
     @Column(nullable = false)
     private DisputeStatus status;
 
+    @Column(length = 500)
+    private String resolutionNote;
+
     protected Dispute() {
     }
 
@@ -65,7 +68,12 @@ public class Dispute {
         return status;
     }
 
-    public void setStatus(DisputeStatus status) {
+    public String getResolutionNote() {
+        return resolutionNote;
+    }
+
+    public void transitionTo(DisputeStatus status, String resolutionNote) {
         this.status = status;
+        this.resolutionNote = resolutionNote;
     }
 }

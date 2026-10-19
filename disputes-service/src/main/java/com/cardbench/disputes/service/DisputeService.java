@@ -28,6 +28,11 @@ public class DisputeService {
     }
 
     @Transactional(readOnly = true)
+    public List<Dispute> listDisputesForCardmember(String cardmemberId) {
+        return disputes.findAllByTransaction_Card_Cardmember_Id(cardmemberId);
+    }
+
+    @Transactional(readOnly = true)
     public Dispute getDispute(Long id) {
         return disputes.findDetailedById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dispute not found: " + id));
@@ -41,9 +46,27 @@ public class DisputeService {
     }
 
     @Transactional
-    public Dispute setStatus(Long id, DisputeStatus status) {
+    public Dispute setStatus(Long id, DisputeStatus status, String resolutionNote) {
         Dispute dispute = getDispute(id);
-        dispute.setStatus(status);
+        if (!dispute.getStatus().canTransitionTo(status)) {
+            throw new InvalidDisputeTransitionException(
+                    "Cannot transition dispute from " + dispute.getStatus() + " to " + status);
+        }
+        if (status.isResolvedOutcome()
+                && (resolutionNote == null || resolutionNote.isBlank() || resolutionNote.length() > 500)) {
+            throw new InvalidResolutionNoteException(
+                    "A resolution note of 1 to 500 characters is required for a resolved outcome");
+        }
+        dispute.transitionTo(status, status.isResolvedOutcome() ? resolutionNote.trim() : null);
         return disputes.save(dispute);
+    }
+
+    @Transactional
+    public Dispute withdrawDisputeForCardmember(Long id, String cardmemberId) {
+        Dispute dispute = getDispute(id);
+        if (!dispute.getTransaction().getCard().getCardmember().getId().equals(cardmemberId)) {
+            throw new ResourceNotFoundException("Dispute not found: " + id);
+        }
+        return setStatus(id, DisputeStatus.WITHDRAWN, null);
     }
 }

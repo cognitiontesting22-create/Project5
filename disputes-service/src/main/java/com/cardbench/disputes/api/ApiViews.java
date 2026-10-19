@@ -50,12 +50,13 @@ public final class ApiViews {
             BigDecimal amount,
             String reason,
             DisputeStatus status,
+            String resolutionNote,
             LocalDate postingDate) {
         static DisputeView from(Dispute dispute) {
             CardTransaction transaction = dispute.getTransaction();
             return new DisputeView(dispute.getId(), transaction.getId(), transaction.getMerchant(),
                     transaction.getCard().getCardmember().getName(), dispute.getAmount(), dispute.getReason(),
-                    dispute.getStatus(), transaction.getPostingDate());
+                    dispute.getStatus(), dispute.getResolutionNote(), transaction.getPostingDate());
         }
     }
 }

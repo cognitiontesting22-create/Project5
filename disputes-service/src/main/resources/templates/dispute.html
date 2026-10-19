@@ -15,7 +15,7 @@
     <p class="eyebrow"><a href="/analyst/disputes">DISPUTES</a> / CASE DETAIL</p>
     <div class="page-heading"><div><h1 th:text="|DSP-${dispute.id}|">DSP-1</h1>
         <p class="lede">Filed against <strong th:text="${dispute.transaction.merchant}">Merchant</strong></p></div>
-        <span class="status" th:classappend="${dispute.status.name() == 'OPEN'} ? ' status-open' : ' status-closed'" th:text="${dispute.status}">OPEN</span></div>
+        <span class="status" th:classappend="| status-${#strings.toLowerCase(dispute.status.name())}|" th:text="${dispute.status.displayName}">Open</span></div>
     <section class="panel">
         <p class="eyebrow">DISPUTE DETAILS</p>
         <dl class="detail-grid">
@@ -25,16 +25,24 @@
             <div><dt>Disputed amount</dt><dd class="amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</dd></div>
             <div><dt>Posting date</dt><dd th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</dd></div>
             <div class="full"><dt>Reason</dt><dd class="reason" th:text="${dispute.reason}">Reason text</dd></div>
+            <div class="full" th:if="${dispute.resolutionNote != null}"><dt>Resolution note</dt><dd class="reason" th:text="${dispute.resolutionNote}">Resolution details</dd></div>
         </dl>
     </section>
     <section class="panel status-panel">
-        <div><p class="eyebrow">CASE MANAGEMENT</p><h2>Update status</h2><p class="muted">Set the current status for this dispute.</p></div>
-        <form class="status-form" method="post" th:action="@{/analyst/disputes/{id}/status(id=${dispute.id})}">
-            <select name="status" aria-label="Dispute status">
-                <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}" th:selected="${status == dispute.status}">OPEN</option>
-            </select>
-            <button type="submit">Save status</button>
-        </form>
+        <div><p class="eyebrow">CASE MANAGEMENT</p><h2>Allowed next steps</h2>
+            <p class="muted" th:if="${statuses.isEmpty()}">This dispute is final; no further changes are allowed.</p>
+            <p class="muted" th:unless="${statuses.isEmpty()}">Choose one of the permitted next steps.</p>
+        </div>
+        <div class="status-actions" th:if="${!statuses.isEmpty()}">
+            <form class="status-form" method="post" th:each="status : ${statuses}"
+                  th:action="@{/analyst/disputes/{id}/status(id=${dispute.id})}">
+                <input type="hidden" name="status" th:value="${status}">
+                <label th:if="${status.isResolvedOutcome()}">Resolution note
+                    <textarea name="resolutionNote" rows="2" maxlength="500" required></textarea>
+                </label>
+                <button type="submit" th:text="${status.displayName}">Move status</button>
+            </form>
+        </div>
     </section>
 </main>
 </body>

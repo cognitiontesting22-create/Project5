@@ -53,7 +53,7 @@ The cardmember desk lists seeded cards and transactions and lets a cardmember su
 
 ### Known limits
 
-1. A dispute has only two statuses, `OPEN` and `CLOSED`, and anyone can flip between them in either direction any number of times.
+1. The dispute lifecycle is `OPEN` → `UNDER_REVIEW` → `AWAITING_CARDMEMBER` (then back to `UNDER_REVIEW`) → `RESOLVED_APPROVED` or `RESOLVED_DENIED`; cardmembers may withdraw before a final outcome. Final outcomes cannot be changed, and resolutions require a note.
 2. Filing checks almost nothing. The disputed amount can be larger than the transaction, the same transaction can be disputed many times, a transaction of any age can be disputed, and the reason is any text.
 3. A dispute never changes the money on the card. There is no credit of any kind.
 4. Nothing records who changed a dispute or when. Only the current state is stored.

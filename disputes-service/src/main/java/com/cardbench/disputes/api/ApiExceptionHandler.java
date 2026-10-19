@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.cardbench.disputes.service.ResourceNotFoundException;
+import com.cardbench.disputes.service.InvalidDisputeTransitionException;
+import com.cardbench.disputes.service.InvalidResolutionNoteException;
 
 @RestControllerAdvice(basePackages = "com.cardbench.disputes.api")
 public class ApiExceptionHandler {
@@ -17,6 +19,18 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse notFound(ResourceNotFoundException exception) {
         return new ErrorResponse("NOT_FOUND", exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidDisputeTransitionException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse invalidTransition(InvalidDisputeTransitionException exception) {
+        return new ErrorResponse("INVALID_TRANSITION", exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidResolutionNoteException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse invalidResolutionNote(InvalidResolutionNoteException exception) {
+        return new ErrorResponse("BAD_REQUEST", exception.getMessage());
     }
 
     @ExceptionHandler({
