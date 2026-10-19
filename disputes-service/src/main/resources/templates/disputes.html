@@ -13,24 +13,96 @@
 </header>
 <main class="shell">
     <p class="eyebrow">ANALYST DESK / QUEUE</p>
-    <div class="page-heading"><div><h1>Disputes</h1><p class="lede">All filed disputes, in the order received.</p></div>
-        <span class="count-pill" th:text="|${disputes.size()} total|">0 total</span></div>
+    <div class="page-heading"><div><h1>Disputes</h1><p class="lede">Prioritize cases by due date and status.</p></div>
+        <span class="count-pill" th:text="|${queue.totalCount} matching cases|">0 matching cases</span></div>
+    <section class="queue-summary">
+        <div class="summary-card" th:each="entry : ${queue.summary.statusCounts}">
+            <span th:text="${entry.key.displayName}">Open</span><strong th:text="${entry.value}">0</strong>
+        </div>
+        <div class="summary-card overdue-summary"><span>Overdue</span><strong th:text="${queue.summary.overdueCount}">0</strong></div>
+        <div class="summary-card"><span>Due in 7 days</span><strong th:text="${queue.summary.dueNextSevenDays}">0</strong></div>
+    </section>
+    <section class="panel">
+        <form class="queue-filters" method="get" action="/analyst/disputes">
+            <label>Status
+                <select name="status" multiple size="3">
+                    <option th:each="value : ${statuses}" th:value="${value}" th:selected="${selectedStatuses.contains(value.name())}"
+                            th:text="${value.displayName}">Open</option>
+                </select>
+            </label>
+            <label>Reason
+                <select name="reasonCode">
+                    <option value="">All reasons</option>
+                    <option th:each="value : ${reasons}" th:value="${value}" th:selected="${reasonCode == value.name()}"
+                            th:text="${value.displayName}">Reason</option>
+                </select>
+            </label>
+            <label>Cardmember
+                <select name="cardmemberId">
+                    <option value="">All cardmembers</option>
+                    <option th:each="value : ${cardmembers}" th:value="${value.id}"
+                            th:selected="${cardmemberId == value.id}" th:text="${value.name}">Cardmember</option>
+                </select>
+            </label>
+            <label>Filed from <input type="date" name="filedFrom" th:value="${filedFrom}"></label>
+            <label>Filed to <input type="date" name="filedTo" th:value="${filedTo}"></label>
+            <label>Overdue only
+                <select name="overdue">
+                    <option value="">No</option>
+                    <option value="true" th:selected="${overdue == 'true'}">Yes</option>
+                </select>
+            </label>
+            <label>Sort by
+                <select name="sort">
+                    <option value="dueDate" th:selected="${sort == 'dueDate'}">Due date</option>
+                    <option value="filedDate" th:selected="${sort == 'filedDate'}">Filed date</option>
+                    <option value="amount" th:selected="${sort == 'amount'}">Amount</option>
+                </select>
+            </label>
+            <label>Direction
+                <select name="direction">
+                    <option value="asc" th:selected="${direction == 'ASC'}">Ascending</option>
+                    <option value="desc" th:selected="${direction == 'DESC'}">Descending</option>
+                </select>
+            </label>
+            <label>Page size
+                <select name="pageSize">
+                    <option value="20" th:selected="${queue.pageSize == 20}">20</option>
+                    <option value="50" th:selected="${queue.pageSize == 50}">50</option>
+                    <option value="100" th:selected="${queue.pageSize == 100}">100</option>
+                </select>
+            </label>
+            <input type="hidden" name="page" value="0">
+            <button type="submit">Apply filters</button>
+        </form>
+    </section>
     <section class="panel">
         <div class="table-wrap">
             <table>
-                <thead><tr><th>Case</th><th>Cardmember</th><th>Merchant</th><th>Posted</th><th>Status</th><th class="right">Amount</th></tr></thead>
+                <thead><tr><th>Case</th><th>Cardmember</th><th>Merchant</th><th>Filed</th><th>Due</th><th>Status</th><th class="right">Amount</th></tr></thead>
                 <tbody>
-                <tr th:each="dispute : ${disputes}">
-                    <td><a class="case-link" th:href="@{/analyst/disputes/{id}(id=${dispute.id})}" th:text="|DSP-${dispute.id}|">DSP-1</a></td>
-                    <td th:text="${dispute.transaction.card.cardmember.name}">Avery Morgan</td>
-                    <td th:text="${dispute.transaction.merchant}">Northstar Market</td>
-                    <td th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</td>
-                    <td><span class="status" th:classappend="| status-${#strings.toLowerCase(dispute.status.name())}|" th:text="${dispute.status.displayName}">Open</span></td>
-                    <td class="right amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</td>
+                <tr th:each="item : ${queue.items}">
+                    <td><a class="case-link" th:href="@{/analyst/disputes/{id}(id=${item.dispute.id})}" th:text="|DSP-${item.dispute.id}|">DSP-1</a></td>
+                    <td th:text="${item.dispute.transaction.card.cardmember.name}">Avery Morgan</td>
+                    <td th:text="${item.dispute.transaction.merchant}">Northstar Market</td>
+                    <td th:text="${#temporals.format(item.filedDate, 'MMM d, yyyy')}">Jan 15, 2026</td>
+                    <td>
+                        <span th:text="${#temporals.format(item.dueDate, 'MMM d, yyyy')}">Feb 14, 2026</span>
+                        <strong class="overdue-marker" th:if="${item.overdue}">OVERDUE</strong>
+                    </td>
+                    <td><span class="status" th:classappend="| status-${#strings.toLowerCase(item.dispute.status.name())}|" th:text="${item.dispute.status.displayName}">Open</span></td>
+                    <td class="right amount" th:text="|$${#numbers.formatDecimal(item.dispute.amount, 1, 2)}|">$24.99</td>
                 </tr>
-                <tr th:if="${disputes.isEmpty()}"><td class="empty" colspan="6">No disputes have been filed yet.</td></tr>
+                <tr th:if="${queue.items.isEmpty()}"><td class="empty" colspan="7">No cases match these filters.</td></tr>
                 </tbody>
             </table>
+        </div>
+        <div class="pagination">
+            <span th:text="|Page ${queue.totalPages == 0 ? 0 : queue.page + 1} of ${queue.totalPages}|">Page 0 of 0</span>
+            <div>
+                <a th:if="${queue.page > 0}" th:href="@{/analyst/disputes(status=${selectedStatuses}, reasonCode=${reasonCode}, cardmemberId=${cardmemberId}, overdue=${overdue}, filedFrom=${filedFrom}, filedTo=${filedTo}, sort=${sort}, direction=${direction}, page=${queue.page - 1}, pageSize=${queue.pageSize})}">Previous</a>
+                <a th:if="${queue.page + 1 < queue.totalPages}" th:href="@{/analyst/disputes(status=${selectedStatuses}, reasonCode=${reasonCode}, cardmemberId=${cardmemberId}, overdue=${overdue}, filedFrom=${filedFrom}, filedTo=${filedTo}, sort=${sort}, direction=${direction}, page=${queue.page + 1}, pageSize=${queue.pageSize})}">Next</a>
+            </div>
         </div>
     </section>
 </main>

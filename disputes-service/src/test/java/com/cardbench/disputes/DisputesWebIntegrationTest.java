@@ -1,6 +1,7 @@
 package com.cardbench.disputes;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -50,6 +51,67 @@ class DisputesWebIntegrationTest {
     }
 
     @Test
+    void queueApiCombinesFiltersSortsPagesAndRejectsUnknownValues() throws Exception {
+        mvc.perform(post("/api/disputes").contentType("application/json")
+                        .content("{\"transactionId\":\"txn-041\",\"amount\":2,\"reasonCode\":\"FRAUD\"}"))
+                .andExpect(status().isUnprocessableEntity());
+        mvc.perform(post("/api/disputes").contentType("application/json")
+                        .content("{\"transactionId\":\"txn-041\",\"amount\":2,\"reasonCode\":\"NOT_RECEIVED\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String secondResponse = mvc.perform(post("/api/disputes").contentType("application/json")
+                        .content("{\"transactionId\":\"txn-051\",\"amount\":10,\"reasonCode\":\"NOT_RECEIVED\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long secondId = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(secondResponse).get("id").asLong();
+        mvc.perform(put("/api/disputes/{id}/status", secondId).contentType("application/json")
+                        .content("{\"status\":\"UNDER_REVIEW\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(get("/api/disputes/queue")
+                        .param("status", "OPEN", "UNDER_REVIEW")
+                        .param("cardmemberId", "member-01")
+                        .param("filedFrom", "2026-01-15")
+                        .param("filedTo", "2026-01-15")
+                        .param("sort", "amount")
+                        .param("direction", "desc")
+                        .param("pageSize", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.pageSize").value(1))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].dispute.amount").value(10))
+                .andExpect(jsonPath("$.items[0].dueDate").value("2026-02-14"))
+                .andExpect(jsonPath("$.items[0].overdue").value(false))
+                .andExpect(jsonPath("$.summary.statusCounts.OPEN").value(1))
+                .andExpect(jsonPath("$.summary.statusCounts.UNDER_REVIEW").value(1))
+                .andExpect(jsonPath("$.summary.overdueCount").value(0));
+
+        mvc.perform(get("/api/disputes/queue").param("sort", "merchant"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        mvc.perform(get("/api/disputes/queue").param("pageSize", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        mvc.perform(get("/analyst/disputes")
+                        .param("cardmemberId", "")
+                        .param("overdue", "")
+                        .param("reasonCode", "")
+                        .param("status", "OPEN", "UNDER_REVIEW")
+                        .param("filedFrom", "2026-01-15")
+                        .param("filedTo", "2026-01-15")
+                        .param("sort", "amount")
+                        .param("direction", "desc")
+                        .param("pageSize", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Page 1 of 2")))
+                .andExpect(content().string(containsString("name=\"status\" multiple")));
+    }
+
+    @Test
     void apiEnforcesLifecycleAndReturnsResolutionNote() throws Exception {
         String response = mvc.perform(post("/api/disputes")
                         .contentType("application/json")
@@ -59,6 +121,7 @@ class DisputesWebIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("OPEN"))
                 .andExpect(jsonPath("$.amount").value(19.22))
+                .andExpect(jsonPath("$.creditState").value("NONE"))
                 .andReturn().getResponse().getContentAsString();
 
         long id = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
@@ -71,6 +134,11 @@ class DisputesWebIntegrationTest {
                 .andExpect(jsonPath("$.code").value("INVALID_TRANSITION"));
         mvc.perform(get("/api/disputes/{id}", id))
                 .andExpect(jsonPath("$.status").value("OPEN"));
+        mvc.perform(get("/api/disputes/{id}/history", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].kind").value("FILED"))
+                .andExpect(jsonPath("$[0].actor").value("system"));
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"CLOSED\"}"))
                 .andExpect(status().isBadRequest())
@@ -82,7 +150,8 @@ class DisputesWebIntegrationTest {
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"));
+                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"))
+                .andExpect(jsonPath("$.creditState").value("PROVISIONAL"));
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"AWAITING_CARDMEMBER\"}"))
                 .andExpect(status().isOk())
@@ -90,7 +159,8 @@ class DisputesWebIntegrationTest {
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"));
+                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"))
+                .andExpect(jsonPath("$.creditState").value("PROVISIONAL"));
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"RESOLVED_DENIED\"}"))
                 .andExpect(status().isBadRequest())
@@ -100,6 +170,7 @@ class DisputesWebIntegrationTest {
                         .content("{\"status\":\"RESOLVED_DENIED\",\"resolutionNote\":\"Merchant provided proof\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RESOLVED_DENIED"))
+                .andExpect(jsonPath("$.creditState").value("REVERSED"))
                 .andExpect(jsonPath("$.resolutionNote").value("Merchant provided proof"));
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
@@ -114,7 +185,137 @@ class DisputesWebIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Resolved in merchant")))
                 .andExpect(content().string(containsString("Merchant provided proof")))
+                .andExpect(content().string(containsString("reversed")))
                 .andExpect(content().string(containsString("This dispute is final")));
+        mvc.perform(get("/api/cards/card-01/account"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creditsInForceTotal").value(0.00))
+                .andExpect(jsonPath("$.adjustments.length()").value(2))
+                .andExpect(jsonPath("$.adjustments[0].kind").value("PROVISIONAL_CREDIT"))
+                .andExpect(jsonPath("$.adjustments[1].kind").value("REVERSAL"));
+    }
+
+    @Test
+    void historyIsAppendOnlyActorAwareAndPrivateNotesAreHiddenFromCardmembers() throws Exception {
+        String response = mvc.perform(post("/api/disputes").header("X-Actor", "Morgan Analyst")
+                        .contentType("application/json")
+                        .content("{\"transactionId\":\"txn-041\",\"amount\":1.00,\"reasonCode\":\"NOT_RECEIVED\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(response).get("id").asLong();
+
+        mvc.perform(put("/api/disputes/{id}/status", id).header("X-Actor", "Casey Analyst")
+                        .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(put("/api/disputes/{id}/status", id).header("X-Actor", "Casey Analyst")
+                        .contentType("application/json")
+                        .content("{\"status\":\"RESOLVED_DENIED\",\"resolutionNote\":\"Evidence reviewed\"}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/api/disputes/{id}/notes", id).header("X-Actor", "Jordan Analyst")
+                        .contentType("application/json")
+                        .content("{\"text\":\"Private investigation detail\",\"internal\":true}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.actor").value("Jordan Analyst"))
+                .andExpect(jsonPath("$.internal").value(true));
+        mvc.perform(post("/api/disputes/{id}/notes", id).header("X-Actor", "Riley Analyst")
+                        .contentType("application/json")
+                        .content("{\"text\":\"Customer update\",\"internal\":false}"))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/disputes/{id}/notes", id).header("X-Actor", "Riley Analyst")
+                        .contentType("application/json").content("{\"text\":\"  \",\"internal\":false}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("NOTE_REQUIRED"));
+        mvc.perform(post("/api/disputes/{id}/notes", id).contentType("application/json")
+                        .content("{\"text\":\"" + "x".repeat(1001) + "\",\"internal\":false}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("NOTE_TOO_LONG"));
+
+        mvc.perform(get("/api/disputes/{id}/history", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(8))
+                .andExpect(jsonPath("$[0].kind").value("FILED"))
+                .andExpect(jsonPath("$[0].actor").value("Morgan Analyst"))
+                .andExpect(jsonPath("$[0].occurredAt").value("2026-01-15T00:00:00Z"))
+                .andExpect(jsonPath("$[1].kind").value("STATUS_CHANGED"))
+                .andExpect(jsonPath("$[1].text").value("Status changed from OPEN to UNDER_REVIEW."))
+                .andExpect(jsonPath("$[2].kind").value("CREDIT_PLACED"))
+                .andExpect(jsonPath("$[3].kind").value("STATUS_CHANGED"))
+                .andExpect(jsonPath("$[4].kind").value("NOTE"))
+                .andExpect(jsonPath("$[5].kind").value("CREDIT_REVERSED"))
+                .andExpect(jsonPath("$[6].internal").value(true))
+                .andExpect(jsonPath("$[7].text").value("Customer update"));
+
+        String analystPage = mvc.perform(get("/analyst/disputes/{id}", id))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(analystPage.contains("Private investigation detail"));
+        assertTrue(analystPage.contains("Jordan Analyst"));
+
+        String cardmemberPage = mvc.perform(get("/cardmembers/member-01"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertTrue(cardmemberPage.contains("Customer update"));
+        assertFalse(cardmemberPage.contains("Private investigation detail"));
+        assertFalse(cardmemberPage.contains("Morgan Analyst"));
+        assertFalse(cardmemberPage.contains("Jordan Analyst"));
+    }
+
+    @Test
+    void cardAccountTracksCreditsAndReversalsWithExactAmounts() throws Exception {
+        String initialAccount = mvc.perform(get("/api/cards/card-01/account"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postedTransactionsTotal").isNumber())
+                .andExpect(jsonPath("$.creditsInForceTotal").value(0.00))
+                .andExpect(jsonPath("$.adjustments.length()").value(0))
+                .andReturn().getResponse().getContentAsString();
+        var initialAccountJson = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(initialAccount);
+        assertEquals(initialAccountJson.get("postedTransactionsTotal").decimalValue(),
+                initialAccountJson.get("balanceOwed").decimalValue());
+
+        String response = mvc.perform(post("/api/disputes").contentType("application/json")
+                        .content("{\"transactionId\":\"txn-001\",\"amount\":19.22,\"reasonCode\":\"NOT_RECEIVED\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long id = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(response).get("id").asLong();
+
+        mvc.perform(put("/api/disputes/{id}/status", id).contentType("application/json")
+                        .content("{\"status\":\"UNDER_REVIEW\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creditState").value("PROVISIONAL"));
+        String provisionalAccount = mvc.perform(get("/api/cards/card-01/account"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creditsInForceTotal").value(19.22))
+                .andExpect(jsonPath("$.adjustments.length()").value(1))
+                .andExpect(jsonPath("$.adjustments[0].disputeId").value(id))
+                .andExpect(jsonPath("$.adjustments[0].kind").value("PROVISIONAL_CREDIT"))
+                .andExpect(jsonPath("$.adjustments[0].amount").value(19.22))
+                .andExpect(jsonPath("$.adjustments[0].date").value("2026-01-15"))
+                .andReturn().getResponse().getContentAsString();
+        var provisionalAccountJson = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
+                .readTree(provisionalAccount);
+        assertEquals(new java.math.BigDecimal("19.22"),
+                initialAccountJson.get("postedTransactionsTotal").decimalValue()
+                        .subtract(provisionalAccountJson.get("balanceOwed").decimalValue()));
+
+        mvc.perform(put("/api/disputes/{id}/status", id).contentType("application/json")
+                        .content("{\"status\":\"AWAITING_CARDMEMBER\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(put("/api/disputes/{id}/status", id).contentType("application/json")
+                        .content("{\"status\":\"UNDER_REVIEW\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(put("/api/disputes/{id}/status", id).contentType("application/json")
+                        .content("{\"status\":\"RESOLVED_APPROVED\",\"resolutionNote\":\"Merchant confirmed\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creditState").value("PERMANENT"));
+        mvc.perform(get("/api/cards/card-01/account"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.creditsInForceTotal").value(19.22))
+                .andExpect(jsonPath("$.adjustments.length()").value(1))
+                .andExpect(jsonPath("$.adjustments[0].kind").value("PERMANENT_CREDIT"));
     }
 
     @Test
@@ -149,6 +350,10 @@ class DisputesWebIntegrationTest {
                         .content("{\"transactionId\":\"txn-003\",\"amount\":1,\"reasonCode\":\"UNRECOGNIZED\"}"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("INVALID_REASON_CODE"));
+        mvc.perform(post("/api/disputes").contentType("application/json")
+                        .content("{\"transactionId\":\"txn-003\",\"amount\":1.001,\"reasonCode\":\"NOT_RECEIVED\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("AMOUNT_PRECISION_INVALID"));
         mvc.perform(post("/api/disputes").contentType("application/json")
                         .content("{\"transactionId\":\"txn-003\",\"amount\":1,\"reasonCode\":\"NOT_RECEIVED\",\"description\":\""
                                 + "x".repeat(501) + "\"}"))
@@ -240,7 +445,13 @@ class DisputesWebIntegrationTest {
                 .andExpect(view().name("cardmember"))
                 .andExpect(content().string(containsString("Northstar Market")))
                 .andExpect(content().string(containsString("Choose a reason")))
-                .andExpect(content().string(containsString("Fraud")));
+                .andExpect(content().string(containsString("Fraud")))
+                .andExpect(content().string(containsString("/cardmembers/member-01/cards/card-01")));
+        mvc.perform(get("/cardmembers/member-01/cards/card-01"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("card-account"))
+                .andExpect(content().string(containsString("Posted transactions")))
+                .andExpect(content().string(containsString("No dispute adjustments.")));
         var invalidFiling = mvc.perform(post("/cardmembers/member-01/disputes")
                         .param("transactionId", "txn-041")
                         .param("amount", "1")

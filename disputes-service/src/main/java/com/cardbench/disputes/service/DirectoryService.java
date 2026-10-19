@@ -39,6 +39,11 @@ public class DirectoryService {
         return cards.findAll();
     }
 
+    public PaymentCard getCard(String id) {
+        return cards.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Card not found: " + id));
+    }
+
     public List<PaymentCard> cardsForCardmember(String cardmemberId) {
         getCardmember(cardmemberId);
         return cards.findByCardmemberId(cardmemberId);

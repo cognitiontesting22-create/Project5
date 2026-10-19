@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.core.annotation.Order;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.cardbench.disputes.domain.CardTransaction;
@@ -18,6 +19,7 @@ import com.cardbench.disputes.repository.CardmemberRepository;
 import com.cardbench.disputes.repository.PaymentCardRepository;
 
 @Component
+@Order(0)
 public class DemoData implements CommandLineRunner {
     private static final String[] NAMES = {
             "Avery Morgan", "Jordan Lee", "Riley Chen", "Casey Patel", "Taylor Brooks", "Morgan Ellis"

@@ -89,6 +89,30 @@ button:hover { background: var(--teal-dark); }
 .status-actions textarea { min-height: 42px; }
 .notice { padding: 11px 14px; border-radius: 6px; background: var(--soft-teal); color: var(--teal-dark); }
 .filing-error, .filing-blocked { display: block; max-width: 220px; margin: 0 0 7px; color: #a33b32; font-size: 11px; line-height: 1.4; text-align: left; white-space: normal; }
+.timeline { margin: 0; padding: 0 0 0 20px; }
+.timeline li { padding: 0 0 18px 7px; color: var(--muted); }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--ink); font-size: 12px; text-transform: capitalize; }
+.timeline-heading time { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.timeline-text { margin: 5px 0; color: #52616c; font-size: 12px; line-height: 1.5; white-space: pre-wrap; }
+.case-note-form { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+.case-note-form label { max-width: 540px; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; }
+.checkbox-label input { width: auto; }
+.member-timeline { margin-top: 8px; }
+.member-timeline summary { color: var(--teal-dark); cursor: pointer; font-weight: 700; }
+.member-timeline .timeline { margin-top: 12px; white-space: normal; min-width: 300px; }
+.queue-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 18px 0; }
+.summary-card { display: grid; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); color: var(--muted); font-size: 11px; }
+.summary-card strong { color: var(--ink); font-size: 21px; }
+.summary-card.overdue-summary strong, .overdue-marker { color: #a33b32; }
+.queue-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); align-items: end; gap: 12px; }
+.queue-filters label { margin: 0; }
+.queue-filters select[multiple] { min-height: 72px; }
+.overdue-marker { display: block; margin-top: 4px; font-size: 9px; letter-spacing: .6px; }
+.pagination { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; color: var(--muted); font-size: 12px; }
+.pagination div { display: flex; gap: 14px; }
+.pagination a { color: var(--teal-dark); font-weight: 700; }
 @media (max-width: 700px) {
     .topbar { height: auto; min-height: 64px; padding: 0 18px; flex-wrap: wrap; gap: 8px; }
     nav { height: 42px; gap: 20px; }

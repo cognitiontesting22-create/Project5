@@ -23,4 +23,7 @@ public final class DisputeRequests {
             @NotNull DisputeStatus status,
             @Size(max = 500) String resolutionNote) {
     }
+
+    public record AddNoteRequest(String text, boolean internal) {
+    }
 }

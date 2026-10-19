@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Cardbench - ${card.label} account|">Cardbench - Card account</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">cardbench <span>DISPUTES</span></a>
+    <nav><a class="active" href="/">Cardmember desk</a><a href="/analyst/disputes">Analyst queue</a></nav>
+</header>
+<main class="shell narrow">
+    <p class="eyebrow"><a th:href="@{/cardmembers/{id}(id=${cardmember.id})}">CARDMEMBER</a> / CARD ACCOUNT</p>
+    <div class="page-heading">
+        <div><h1 th:text="${card.label}">Everyday card</h1><p class="lede" th:text="${card.id}">card-01</p></div>
+    </div>
+    <section class="panel">
+        <p class="eyebrow">BALANCE</p>
+        <dl class="detail-grid">
+            <div><dt>Posted transactions</dt><dd th:text="|$${#numbers.formatDecimal(account.postedTransactionsTotal, 1, 2)}|">$0.00</dd></div>
+            <div><dt>Credits in force</dt><dd th:text="|$${#numbers.formatDecimal(account.creditsInForceTotal, 1, 2)}|">$0.00</dd></div>
+            <div><dt>Balance owed</dt><dd class="amount" th:text="|$${#numbers.formatDecimal(account.balanceOwed, 1, 2)}|">$0.00</dd></div>
+        </dl>
+    </section>
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">DISPUTE ACTIVITY</p><h2>Account adjustments</h2></div></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Dispute</th><th>Kind</th><th>Date</th><th class="right">Amount</th></tr></thead>
+                <tbody>
+                <tr th:each="adjustment : ${account.adjustments}">
+                    <td><a class="case-link" th:href="@{/analyst/disputes/{id}(id=${adjustment.disputeId})}"
+                           th:text="|DSP-${adjustment.disputeId}|">DSP-1</a></td>
+                    <td th:text="${#strings.replace(#strings.toLowerCase(adjustment.kind.name()), '_', ' ')}">provisional credit</td>
+                    <td th:text="${#temporals.format(adjustment.date, 'MMM d, yyyy')}">Jan 15, 2026</td>
+                    <td class="right amount" th:text="|$${#numbers.formatDecimal(adjustment.amount, 1, 2)}|">$0.00</td>
+                </tr>
+                <tr th:if="${account.adjustments.isEmpty()}"><td class="empty" colspan="4">No dispute adjustments.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

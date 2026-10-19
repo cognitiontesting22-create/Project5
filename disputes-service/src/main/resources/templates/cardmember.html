@@ -23,7 +23,9 @@
         <div class="card-list">
             <div class="card-row" th:each="card : ${cards}">
                 <span class="card-mark">CB</span>
-                <strong th:text="${card.label}">Everyday card</strong>
+                <a th:href="@{/cardmembers/{memberId}/cards/{cardId}(memberId=${cardmember.id},cardId=${card.id})}">
+                    <strong th:text="${card.label}">Everyday card</strong>
+                </a>
                 <span class="muted" th:text="${card.id}">card-01</span>
             </div>
         </div>
@@ -38,9 +40,24 @@
                     <td th:text="|DSP-${dispute.id}|">DSP-1</td>
                     <td th:text="${dispute.transaction.merchant}">Northstar Market</td>
                     <td><span class="status" th:classappend="| status-${#strings.toLowerCase(dispute.status.name())}|" th:text="${dispute.status.displayName}">Open</span></td>
-                    <td class="reason" th:text="${dispute.resolutionNote != null ? dispute.resolutionNote : '—'}">—</td>
+                    <td class="reason">
+                        <span th:text="${dispute.resolutionNote != null ? dispute.resolutionNote : '—'}">—</span>
+                        <details class="member-timeline">
+                            <summary>Case timeline</summary>
+                            <ol class="timeline">
+                                <li th:each="event : ${disputeHistory[dispute.id]}">
+                                    <div class="timeline-heading">
+                                        <strong th:text="${#strings.replace(#strings.toLowerCase(event.kind.name()), '_', ' ')}">Filed</strong>
+                                        <time th:text="${#temporals.format(event.occurredAt, 'MMM d, yyyy HH:mm:ss')}">Jan 15, 2026 00:00:00</time>
+                                    </div>
+                                    <p class="timeline-text" th:text="${event.text}">Case event details</p>
+                                </li>
+                            </ol>
+                        </details>
+                    </td>
                     <td class="right" th:if="${dispute.status.canTransitionTo(T(com.cardbench.disputes.domain.DisputeStatus).WITHDRAWN)}">
                         <form method="post" th:action="@{/cardmembers/{id}/disputes/{disputeId}/withdraw(id=${cardmember.id}, disputeId=${dispute.id})}">
+                            <input type="hidden" name="actor" value="cardmember">
                             <button type="submit">Withdraw</button>
                         </form>
                     </td>
@@ -72,6 +89,7 @@
                             <summary>File dispute</summary>
                             <form method="post" th:action="@{/cardmembers/{id}/disputes(id=${cardmember.id})}">
                                 <input type="hidden" name="transactionId" th:value="${transaction.id}">
+                                <input type="hidden" name="actor" value="cardmember">
                                 <label>Disputed amount <input type="number" name="amount" min="0.01" step="0.01" required th:value="${transaction.amount}"></label>
                                 <label>Reason
                                     <select name="reasonCode" required>

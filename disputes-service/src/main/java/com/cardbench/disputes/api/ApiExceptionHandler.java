@@ -14,6 +14,8 @@ import com.cardbench.disputes.service.ResourceNotFoundException;
 import com.cardbench.disputes.service.InvalidDisputeTransitionException;
 import com.cardbench.disputes.service.InvalidResolutionNoteException;
 import com.cardbench.disputes.service.DisputeFilingException;
+import com.cardbench.disputes.service.InvalidCaseNoteException;
+import com.cardbench.disputes.service.InvalidQueueRequestException;
 
 @RestControllerAdvice(basePackages = "com.cardbench.disputes.api")
 public class ApiExceptionHandler {
@@ -32,6 +34,18 @@ public class ApiExceptionHandler {
     @ExceptionHandler(InvalidResolutionNoteException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse invalidResolutionNote(InvalidResolutionNoteException exception) {
+        return new ErrorResponse("BAD_REQUEST", exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCaseNoteException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ErrorResponse invalidCaseNote(InvalidCaseNoteException exception) {
+        return new ErrorResponse(exception.getCode(), exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidQueueRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse invalidQueueRequest(InvalidQueueRequestException exception) {
         return new ErrorResponse("BAD_REQUEST", exception.getMessage());
     }
 
