@@ -1,6 +1,7 @@
 package com.cardbench.disputes.web;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,8 @@ import org.springframework.ui.Model;
 
 import com.cardbench.disputes.service.DirectoryService;
 import com.cardbench.disputes.service.DisputeService;
+import com.cardbench.disputes.service.DisputeFilingException;
+import com.cardbench.disputes.domain.DisputeReason;
 
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -30,8 +33,11 @@ public class CardmemberController {
     public String detail(@PathVariable String id, Model model) {
         model.addAttribute("cardmember", directory.getCardmember(id));
         model.addAttribute("cards", directory.cardsForCardmember(id));
-        model.addAttribute("transactions", directory.listTransactions(id, null));
+        var transactions = directory.listTransactions(id, null);
+        model.addAttribute("transactions", transactions);
         model.addAttribute("disputes", disputes.listDisputesForCardmember(id));
+        model.addAttribute("filingBlockReasons", disputes.filingBlockReasons(transactions));
+        model.addAttribute("disputeReasons", Arrays.stream(DisputeReason.values()).toList());
         return "cardmember";
     }
 
@@ -40,12 +46,19 @@ public class CardmemberController {
             @PathVariable String id,
             @RequestParam String transactionId,
             @RequestParam BigDecimal amount,
-            @RequestParam String reason,
+            @RequestParam(required = false) String reasonCode,
+            @RequestParam(required = false) String description,
             RedirectAttributes redirectAttributes) {
         directory.getCardmember(id);
-        var dispute = disputes.fileDispute(transactionId, amount, reason);
-        redirectAttributes.addFlashAttribute("notice", "Dispute filed.");
-        return "redirect:/analyst/disputes/" + dispute.getId();
+        try {
+            var dispute = disputes.fileDispute(transactionId, amount, reasonCode, description);
+            redirectAttributes.addFlashAttribute("notice", "Dispute filed.");
+            return "redirect:/analyst/disputes/" + dispute.getId();
+        } catch (DisputeFilingException exception) {
+            redirectAttributes.addFlashAttribute("filingError", exception.getMessage());
+            redirectAttributes.addFlashAttribute("filingErrorTransactionId", transactionId);
+            return "redirect:/cardmembers/" + id;
+        }
     }
 
     @PostMapping("/cardmembers/{id}/disputes/{disputeId}/withdraw")

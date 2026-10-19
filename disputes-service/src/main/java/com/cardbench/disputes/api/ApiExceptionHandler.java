@@ -1,6 +1,7 @@
 package com.cardbench.disputes.api;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.cardbench.disputes.service.ResourceNotFoundException;
 import com.cardbench.disputes.service.InvalidDisputeTransitionException;
 import com.cardbench.disputes.service.InvalidResolutionNoteException;
+import com.cardbench.disputes.service.DisputeFilingException;
 
 @RestControllerAdvice(basePackages = "com.cardbench.disputes.api")
 public class ApiExceptionHandler {
@@ -31,6 +33,12 @@ public class ApiExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse invalidResolutionNote(InvalidResolutionNoteException exception) {
         return new ErrorResponse("BAD_REQUEST", exception.getMessage());
+    }
+
+    @ExceptionHandler(DisputeFilingException.class)
+    public ResponseEntity<ErrorResponse> disputeFilingRejected(DisputeFilingException exception) {
+        return ResponseEntity.status(exception.getStatus())
+                .body(new ErrorResponse(exception.getCode(), exception.getMessage()));
     }
 
     @ExceptionHandler({

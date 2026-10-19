@@ -24,7 +24,10 @@
             <div><dt>Transaction amount</dt><dd th:text="|$${#numbers.formatDecimal(dispute.transaction.amount, 1, 2)}|">$24.99</dd></div>
             <div><dt>Disputed amount</dt><dd class="amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</dd></div>
             <div><dt>Posting date</dt><dd th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</dd></div>
-            <div class="full"><dt>Reason</dt><dd class="reason" th:text="${dispute.reason}">Reason text</dd></div>
+            <div class="full"><dt>Reason</dt><dd class="reason">
+                <strong th:text="${dispute.reasonCode.displayName}">Reason code label</strong>
+                <span th:if="${dispute.description != null}" th:text="${dispute.description}">Additional details</span>
+            </dd></div>
             <div class="full" th:if="${dispute.resolutionNote != null}"><dt>Resolution note</dt><dd class="reason" th:text="${dispute.resolutionNote}">Resolution details</dd></div>
         </dl>
     </section>

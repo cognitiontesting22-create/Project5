@@ -20,10 +20,12 @@ import jakarta.validation.Valid;
 import com.cardbench.disputes.api.ApiViews.CardView;
 import com.cardbench.disputes.api.ApiViews.CardmemberView;
 import com.cardbench.disputes.api.ApiViews.DisputeView;
+import com.cardbench.disputes.api.ApiViews.DisputeReasonView;
 import com.cardbench.disputes.api.ApiViews.TransactionView;
 import com.cardbench.disputes.api.DisputeRequests.FileDisputeRequest;
 import com.cardbench.disputes.api.DisputeRequests.SetStatusRequest;
 import com.cardbench.disputes.domain.Dispute;
+import com.cardbench.disputes.domain.DisputeReason;
 import com.cardbench.disputes.service.DirectoryService;
 import com.cardbench.disputes.service.DisputeService;
 
@@ -65,7 +67,12 @@ public class ApiController {
     @Transactional
     public DisputeView fileDispute(@Valid @RequestBody FileDisputeRequest request) {
         return DisputeView.from(disputeService.fileDispute(
-                request.transactionId(), request.amount(), request.reason()));
+                request.transactionId(), request.amount(), request.reasonCode(), request.description()));
+    }
+
+    @GetMapping("/dispute-reasons")
+    public List<DisputeReasonView> disputeReasons() {
+        return java.util.Arrays.stream(DisputeReason.values()).map(DisputeReasonView::from).toList();
     }
 
     @GetMapping("/disputes")
