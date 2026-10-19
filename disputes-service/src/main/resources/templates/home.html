@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cardbench | Disputes desk</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">cardbench <span>DISPUTES</span></a>
+    <nav><a class="active" href="/">Cardmember desk</a><a href="/analyst/disputes">Analyst queue</a></nav>
+</header>
+<main class="shell">
+    <p class="eyebrow">CARDMEMBER DESK / OVERVIEW</p>
+    <h1>Find a cardmember</h1>
+    <p class="lede">Choose a profile to review its cards and posted transactions.</p>
+    <section class="member-grid">
+        <a class="member-card" th:each="member : ${cardmembers}" th:href="@{/cardmembers/{id}(id=${member.id})}">
+            <span class="avatar" th:text="${#strings.substring(member.name, 0, 1)}">A</span>
+            <span class="member-info"><strong th:text="${member.name}">Avery Morgan</strong>
+                <small th:text="${member.email}">member@cardbench.example</small></span>
+            <span class="arrow">→</span>
+        </a>
+    </section>
+</main>
+</body>
+</html>

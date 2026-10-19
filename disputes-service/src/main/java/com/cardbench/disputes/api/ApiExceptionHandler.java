@@ -1,0 +1,35 @@
+package com.cardbench.disputes.api;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.cardbench.disputes.service.ResourceNotFoundException;
+
+@RestControllerAdvice(basePackages = "com.cardbench.disputes.api")
+public class ApiExceptionHandler {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse notFound(ResourceNotFoundException exception) {
+        return new ErrorResponse("NOT_FOUND", exception.getMessage());
+    }
+
+    @ExceptionHandler({
+            HttpMessageNotReadableException.class,
+            MethodArgumentNotValidException.class,
+            MethodArgumentTypeMismatchException.class,
+            MissingServletRequestParameterException.class
+    })
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse badRequest(Exception exception) {
+        return new ErrorResponse("BAD_REQUEST", "Request body is invalid or contains an unsupported value");
+    }
+
+    public record ErrorResponse(String code, String message) {
+    }
+}

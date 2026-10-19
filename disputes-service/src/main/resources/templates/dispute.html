@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Cardbench - DSP-${dispute.id}|">Cardbench - Dispute detail</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">cardbench <span>DISPUTES</span></a>
+    <nav><a href="/">Cardmember desk</a><a class="active" href="/analyst/disputes">Analyst queue</a></nav>
+</header>
+<main class="shell narrow">
+    <p class="eyebrow"><a href="/analyst/disputes">DISPUTES</a> / CASE DETAIL</p>
+    <div class="page-heading"><div><h1 th:text="|DSP-${dispute.id}|">DSP-1</h1>
+        <p class="lede">Filed against <strong th:text="${dispute.transaction.merchant}">Merchant</strong></p></div>
+        <span class="status" th:classappend="${dispute.status.name() == 'OPEN'} ? ' status-open' : ' status-closed'" th:text="${dispute.status}">OPEN</span></div>
+    <section class="panel">
+        <p class="eyebrow">DISPUTE DETAILS</p>
+        <dl class="detail-grid">
+            <div><dt>Cardmember</dt><dd th:text="${dispute.transaction.card.cardmember.name}">Avery Morgan</dd></div>
+            <div><dt>Transaction</dt><dd th:text="${dispute.transaction.id}">txn-001</dd></div>
+            <div><dt>Transaction amount</dt><dd th:text="|$${#numbers.formatDecimal(dispute.transaction.amount, 1, 2)}|">$24.99</dd></div>
+            <div><dt>Disputed amount</dt><dd class="amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</dd></div>
+            <div><dt>Posting date</dt><dd th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</dd></div>
+            <div class="full"><dt>Reason</dt><dd class="reason" th:text="${dispute.reason}">Reason text</dd></div>
+        </dl>
+    </section>
+    <section class="panel status-panel">
+        <div><p class="eyebrow">CASE MANAGEMENT</p><h2>Update status</h2><p class="muted">Set the current status for this dispute.</p></div>
+        <form class="status-form" method="post" th:action="@{/analyst/disputes/{id}/status(id=${dispute.id})}">
+            <select name="status" aria-label="Dispute status">
+                <option th:each="status : ${statuses}" th:value="${status}" th:text="${status}" th:selected="${status == dispute.status}">OPEN</option>
+            </select>
+            <button type="submit">Save status</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

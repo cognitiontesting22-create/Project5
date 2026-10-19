@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cardbench | Analyst queue</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">cardbench <span>DISPUTES</span></a>
+    <nav><a href="/">Cardmember desk</a><a class="active" href="/analyst/disputes">Analyst queue</a></nav>
+</header>
+<main class="shell">
+    <p class="eyebrow">ANALYST DESK / QUEUE</p>
+    <div class="page-heading"><div><h1>Disputes</h1><p class="lede">All filed disputes, in the order received.</p></div>
+        <span class="count-pill" th:text="|${disputes.size()} total|">0 total</span></div>
+    <section class="panel">
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Case</th><th>Cardmember</th><th>Merchant</th><th>Posted</th><th>Status</th><th class="right">Amount</th></tr></thead>
+                <tbody>
+                <tr th:each="dispute : ${disputes}">
+                    <td><a class="case-link" th:href="@{/analyst/disputes/{id}(id=${dispute.id})}" th:text="|DSP-${dispute.id}|">DSP-1</a></td>
+                    <td th:text="${dispute.transaction.card.cardmember.name}">Avery Morgan</td>
+                    <td th:text="${dispute.transaction.merchant}">Northstar Market</td>
+                    <td th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</td>
+                    <td><span class="status" th:classappend="${dispute.status.name() == 'OPEN'} ? ' status-open' : ' status-closed'" th:text="${dispute.status}">OPEN</span></td>
+                    <td class="right amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</td>
+                </tr>
+                <tr th:if="${disputes.isEmpty()}"><td class="empty" colspan="6">No disputes have been filed yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
