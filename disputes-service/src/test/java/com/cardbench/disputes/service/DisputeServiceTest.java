@@ -46,13 +46,13 @@ class DisputeServiceTest {
         PaymentCard card = new PaymentCard("card-01", "Everyday card 01", member);
         transaction = new CardTransaction("txn-001", "Northstar Market", "Groceries",
                 new BigDecimal("12.34"), TODAY, card);
-        when(transactions.findById("txn-001")).thenReturn(Optional.of(transaction));
         service = new DisputeService(disputes, transactions,
                 Clock.fixed(TODAY.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
     }
 
     @Test
     void acceptsAmountsGreaterThanZeroAndUpToTheTransactionAmount() {
+        stubOriginalTransaction();
         when(disputes.save(any(Dispute.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Dispute partial = service.fileDispute("txn-001", new BigDecimal("1.00"), "NOT_RECEIVED", null);
@@ -104,6 +104,7 @@ class DisputeServiceTest {
 
     @Test
     void acceptsDescriptionAt500CharactersAndStoresIt() {
+        stubOriginalTransaction();
         String description = "x".repeat(500);
         when(disputes.save(any(Dispute.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -114,6 +115,7 @@ class DisputeServiceTest {
 
     @Test
     void fraudRequiresTheFullTransactionAmount() {
+        stubOriginalTransaction();
         DisputeFilingException exception = assertThrows(DisputeFilingException.class,
                 () -> service.fileDispute("txn-001", BigDecimal.ONE, "FRAUD", null));
         assertEquals("FRAUD_MUST_DISPUTE_FULL_AMOUNT", exception.getCode());
@@ -122,6 +124,7 @@ class DisputeServiceTest {
 
     @Test
     void activeDisputesConflictButWithdrawnAndDeniedDisputesMayBeRefiled() {
+        stubOriginalTransaction();
         when(disputes.existsByTransaction_IdAndStatusIn("txn-001",
                 java.util.List.of(DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW,
                         DisputeStatus.AWAITING_CARDMEMBER))).thenReturn(true);
@@ -141,6 +144,7 @@ class DisputeServiceTest {
 
     @Test
     void approvedDisputesPermanentlyPreventRefiling() {
+        stubOriginalTransaction();
         when(disputes.existsByTransaction_IdAndStatus("txn-001", DisputeStatus.RESOLVED_APPROVED))
                 .thenReturn(true);
 
@@ -209,6 +213,7 @@ class DisputeServiceTest {
     }
 
     private void assertFilingError(String expectedCode, BigDecimal amount, String reasonCode, String description) {
+        stubOriginalTransaction();
         DisputeFilingException exception = assertThrows(DisputeFilingException.class,
                 () -> service.fileDispute("txn-001", amount, reasonCode, description));
         assertEquals(expectedCode, exception.getCode());
@@ -217,5 +222,9 @@ class DisputeServiceTest {
     private CardTransaction transactionWithPostingDate(String id, LocalDate postingDate) {
         return new CardTransaction(id, transaction.getMerchant(), transaction.getCategory(), transaction.getAmount(),
                 postingDate, transaction.getCard());
+    }
+
+    private void stubOriginalTransaction() {
+        when(transactions.findById("txn-001")).thenReturn(Optional.of(transaction));
     }
 }

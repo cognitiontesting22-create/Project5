@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest(properties = "cardbench.today=2026-01-15")
@@ -168,7 +169,7 @@ class DisputesWebIntegrationTest {
 
     @Test
     void apiRejectsASecondActiveDisputeWithConflict() throws Exception {
-        String request = "{\"transactionId\":\"txn-004\",\"amount\":54.83,\"reasonCode\":\"NOT_RECEIVED\"}";
+        String request = "{\"transactionId\":\"txn-002\",\"amount\":31.09,\"reasonCode\":\"NOT_RECEIVED\"}";
         mvc.perform(post("/api/disputes").contentType("application/json").content(request))
                 .andExpect(status().isCreated());
         mvc.perform(post("/api/disputes").contentType("application/json").content(request))
@@ -240,12 +241,14 @@ class DisputesWebIntegrationTest {
                 .andExpect(content().string(containsString("Northstar Market")))
                 .andExpect(content().string(containsString("Choose a reason")))
                 .andExpect(content().string(containsString("Fraud")));
-        mvc.perform(post("/cardmembers/member-01/disputes")
+        var invalidFiling = mvc.perform(post("/cardmembers/member-01/disputes")
                         .param("transactionId", "txn-041")
                         .param("amount", "1")
                         .param("reasonCode", "INVALID"))
-                .andExpect(status().is3xxRedirection());
-        String errorPage = mvc.perform(get("/cardmembers/member-01"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+        MockHttpSession session = (MockHttpSession) invalidFiling.getRequest().getSession(false);
+        String errorPage = mvc.perform(get("/cardmembers/member-01").session(session))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertTrue(transactionRow(errorPage, "txn-041").contains("Choose one of the supported dispute reasons."));
