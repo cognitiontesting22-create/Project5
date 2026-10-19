@@ -42,6 +42,10 @@ public class Dispute {
     @Column(length = 500)
     private String resolutionNote;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DisputeCreditState creditState = DisputeCreditState.NONE;
+
     protected Dispute() {
     }
 
@@ -81,8 +85,16 @@ public class Dispute {
         return resolutionNote;
     }
 
+    public DisputeCreditState getCreditState() {
+        return creditState;
+    }
+
     public void transitionTo(DisputeStatus status, String resolutionNote) {
         this.status = status;
         this.resolutionNote = resolutionNote;
+    }
+
+    public void setCreditState(DisputeCreditState creditState) {
+        this.creditState = creditState;
     }
 }

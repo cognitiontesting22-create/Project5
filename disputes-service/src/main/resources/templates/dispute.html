@@ -23,6 +23,7 @@
             <div><dt>Transaction</dt><dd th:text="${dispute.transaction.id}">txn-001</dd></div>
             <div><dt>Transaction amount</dt><dd th:text="|$${#numbers.formatDecimal(dispute.transaction.amount, 1, 2)}|">$24.99</dd></div>
             <div><dt>Disputed amount</dt><dd class="amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</dd></div>
+            <div><dt>Dispute credit</dt><dd th:text="${#strings.toLowerCase(dispute.creditState.name())}">none</dd></div>
             <div><dt>Posting date</dt><dd th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</dd></div>
             <div class="full"><dt>Reason</dt><dd class="reason">
                 <strong th:text="${dispute.reasonCode.displayName}">Reason code label</strong>
@@ -40,12 +41,40 @@
             <form class="status-form" method="post" th:each="status : ${statuses}"
                   th:action="@{/analyst/disputes/{id}/status(id=${dispute.id})}">
                 <input type="hidden" name="status" th:value="${status}">
+                <label>Analyst
+                    <input type="text" name="actor" maxlength="100" placeholder="Analyst name">
+                </label>
                 <label th:if="${status.isResolvedOutcome()}">Resolution note
                     <textarea name="resolutionNote" rows="2" maxlength="500" required></textarea>
                 </label>
                 <button type="submit" th:text="${status.displayName}">Move status</button>
             </form>
         </div>
+    </section>
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">CASE HISTORY</p><h2>Timeline</h2></div></div>
+        <ol class="timeline">
+            <li th:each="event : ${history}">
+                <div class="timeline-heading">
+                    <strong th:text="${#strings.replace(#strings.toLowerCase(event.kind.name()), '_', ' ')}">Filed</strong>
+                    <time th:text="${#temporals.format(event.occurredAt, 'MMM d, yyyy HH:mm:ss')}">Jan 15, 2026 00:00:00</time>
+                </div>
+                <p class="timeline-text" th:text="${event.text}">Case event details</p>
+                <small class="muted" th:text="|By ${event.actor}|">By system</small>
+                <span class="tag" th:if="${event.internal}">Internal</span>
+            </li>
+        </ol>
+        <form class="case-note-form" method="post"
+              th:action="@{/analyst/disputes/{id}/notes(id=${dispute.id})}">
+            <label>Analyst
+                <input type="text" name="actor" maxlength="100" placeholder="Analyst name">
+            </label>
+            <label>Case note
+                <textarea name="text" rows="3" maxlength="1000" required></textarea>
+            </label>
+            <label class="checkbox-label"><input type="checkbox" name="internal" value="true"> Internal note</label>
+            <button type="submit">Add note</button>
+        </form>
     </section>
 </main>
 </body>

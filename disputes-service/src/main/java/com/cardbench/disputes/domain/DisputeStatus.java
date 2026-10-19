@@ -28,6 +28,10 @@ public enum DisputeStatus {
         return this == RESOLVED_APPROVED || this == RESOLVED_DENIED;
     }
 
+    public boolean isFinal() {
+        return isResolvedOutcome() || this == WITHDRAWN;
+    }
+
     public String getDisplayName() {
         return switch (this) {
             case OPEN -> "Open";
