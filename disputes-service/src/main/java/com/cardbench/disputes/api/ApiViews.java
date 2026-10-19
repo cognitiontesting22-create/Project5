@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import com.cardbench.disputes.domain.CardTransaction;
 import com.cardbench.disputes.domain.Cardmember;
 import com.cardbench.disputes.domain.Dispute;
+import com.cardbench.disputes.domain.DisputeReason;
 import com.cardbench.disputes.domain.DisputeStatus;
 import com.cardbench.disputes.domain.PaymentCard;
 
@@ -48,15 +49,23 @@ public final class ApiViews {
             String merchant,
             String cardmemberName,
             BigDecimal amount,
-            String reason,
+            DisputeReason reasonCode,
+            String description,
             DisputeStatus status,
             String resolutionNote,
             LocalDate postingDate) {
         static DisputeView from(Dispute dispute) {
             CardTransaction transaction = dispute.getTransaction();
             return new DisputeView(dispute.getId(), transaction.getId(), transaction.getMerchant(),
-                    transaction.getCard().getCardmember().getName(), dispute.getAmount(), dispute.getReason(),
+                    transaction.getCard().getCardmember().getName(), dispute.getAmount(), dispute.getReasonCode(),
+                    dispute.getDescription(),
                     dispute.getStatus(), dispute.getResolutionNote(), transaction.getPostingDate());
+        }
+    }
+
+    public record DisputeReasonView(DisputeReason code, String label) {
+        static DisputeReasonView from(DisputeReason reason) {
+            return new DisputeReasonView(reason, reason.getDisplayName());
         }
     }
 }

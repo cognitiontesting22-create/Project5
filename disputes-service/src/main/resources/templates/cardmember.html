@@ -65,15 +65,30 @@
                     <td th:text="${#temporals.format(transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</td>
                     <td class="right amount" th:text="|$${#numbers.formatDecimal(transaction.amount, 1, 2)}|">$24.99</td>
                     <td class="right">
-                        <details class="dispute-form">
+                        <p class="filing-error"
+                           th:if="${filingError != null and filingErrorTransactionId == transaction.id}"
+                           th:text="${filingError}">The filing rule was not met.</p>
+                        <details class="dispute-form" th:if="${filingBlockReasons[transaction.id] == null}">
                             <summary>File dispute</summary>
                             <form method="post" th:action="@{/cardmembers/{id}/disputes(id=${cardmember.id})}">
                                 <input type="hidden" name="transactionId" th:value="${transaction.id}">
-                                <label>Disputed amount <input type="number" name="amount" min="0" step="0.01" required th:value="${transaction.amount}"></label>
-                                <label>Reason <textarea name="reason" rows="2" required placeholder="Tell us what happened"></textarea></label>
+                                <label>Disputed amount <input type="number" name="amount" min="0.01" step="0.01" required th:value="${transaction.amount}"></label>
+                                <label>Reason
+                                    <select name="reasonCode" required>
+                                        <option value="" disabled selected>Choose a reason</option>
+                                        <option th:each="reason : ${disputeReasons}" th:value="${reason.name()}"
+                                                th:text="${reason.displayName}">Fraud</option>
+                                    </select>
+                                </label>
+                                <label>Description (optional)
+                                    <textarea name="description" rows="2" maxlength="500"
+                                              placeholder="Add details (up to 500 characters)"></textarea>
+                                </label>
                                 <button type="submit">Submit dispute</button>
                             </form>
                         </details>
+                        <span class="filing-blocked" th:if="${filingBlockReasons[transaction.id] != null}"
+                              th:text="${filingBlockReasons[transaction.id]}">This transaction cannot be disputed.</span>
                     </td>
                 </tr>
                 </tbody>

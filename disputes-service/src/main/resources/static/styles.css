@@ -88,6 +88,7 @@ button:hover { background: var(--teal-dark); }
 .status-actions label { width: 220px; margin: 0; }
 .status-actions textarea { min-height: 42px; }
 .notice { padding: 11px 14px; border-radius: 6px; background: var(--soft-teal); color: var(--teal-dark); }
+.filing-error, .filing-blocked { display: block; max-width: 220px; margin: 0 0 7px; color: #a33b32; font-size: 11px; line-height: 1.4; text-align: left; white-space: normal; }
 @media (max-width: 700px) {
     .topbar { height: auto; min-height: 64px; padding: 0 18px; flex-wrap: wrap; gap: 8px; }
     nav { height: 42px; gap: 20px; }

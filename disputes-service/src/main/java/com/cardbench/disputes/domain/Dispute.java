@@ -28,8 +28,12 @@ public class Dispute {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String reason;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DisputeReason reasonCode;
+
+    @Column(length = 500)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -41,10 +45,11 @@ public class Dispute {
     protected Dispute() {
     }
 
-    public Dispute(CardTransaction transaction, BigDecimal amount, String reason) {
+    public Dispute(CardTransaction transaction, BigDecimal amount, DisputeReason reasonCode, String description) {
         this.transaction = transaction;
         this.amount = amount;
-        this.reason = reason;
+        this.reasonCode = reasonCode;
+        this.description = description;
         this.status = DisputeStatus.OPEN;
     }
 
@@ -60,8 +65,12 @@ public class Dispute {
         return amount;
     }
 
-    public String getReason() {
-        return reason;
+    public DisputeReason getReasonCode() {
+        return reasonCode;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public DisputeStatus getStatus() {

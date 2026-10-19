@@ -14,8 +14,9 @@ public final class DisputeRequests {
 
     public record FileDisputeRequest(
             @NotBlank String transactionId,
-            @NotNull BigDecimal amount,
-            @NotNull String reason) {
+            BigDecimal amount,
+            String reasonCode,
+            String description) {
     }
 
     public record SetStatusRequest(
