@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cardbench | Rewards desk</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">cardbench <span>REWARDS</span></a>
+    <nav><a class="active" href="/">Cardmember desk</a></nav>
+</header>
+<main class="shell">
+    <p class="eyebrow">REWARDS DESK / OVERVIEW</p>
+    <h1>Cardmember rewards</h1>
+    <p class="lede">Review each card's posted activity and current points balance.</p>
+    <section class="member-grid">
+        <article class="member-card" th:each="member : ${members}">
+            <span class="avatar" th:text="${#strings.substring(member.name, 0, 1)}">A</span>
+            <div class="member-content">
+                <strong th:text="${member.name}">Avery Morgan</strong>
+                <small th:text="${member.email}">member@cardbench.example</small>
+                <div class="home-cards">
+                    <a class="card-link" th:each="card : ${member.cards}" th:href="@{/cards/{id}(id=${card.id})}">
+                        <span><b th:text="${card.label}">Everyday card</b><small th:text="${card.id}">card-01</small></span>
+                        <span class="points" th:text="|${#numbers.formatInteger(card.balance, 1, 'COMMA')} pts|">0 pts</span>
+                    </a>
+                </div>
+            </div>
+        </article>
+    </section>
+</main>
+</body>
+</html>

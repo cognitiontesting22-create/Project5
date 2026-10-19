@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Cardbench - ${card.label}|">Cardbench - Card ledger</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/">cardbench <span>REWARDS</span></a>
+    <nav><a class="active" href="/">Cardmember desk</a></nav>
+</header>
+<main class="shell">
+    <p class="eyebrow"><a href="/">CARDMEMBERS</a> / REWARDS CARD</p>
+    <div class="page-heading">
+        <div><h1 th:text="${card.label}">Everyday card</h1>
+            <p class="lede" th:text="|${card.cardmemberName} · ${card.id}|">Avery Morgan · card-01</p></div>
+        <div class="balance-box"><span>Current points balance</span>
+            <strong th:text="|${#numbers.formatInteger(card.balance, 1, 'COMMA')} pts|">0 pts</strong></div>
+    </div>
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">POINTS ACTIVITY</p><h2>Full rewards ledger</h2></div>
+            <span class="count-pill" th:text="|${ledger.size()} earnings|">0 earnings</span></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Transaction</th><th>Merchant</th><th>Category</th><th>Earned</th><th class="right">Points</th></tr></thead>
+                <tbody>
+                <tr th:each="entry : ${ledger}">
+                    <td class="case-link" th:text="${entry.transactionId}">reward-txn-001</td>
+                    <td><strong th:text="${entry.merchant}">Northstar Market</strong>
+                        <small class="subline" th:text="|$${#numbers.formatDecimal(entry.amount, 1, 2)} purchase|">$12.34 purchase</small></td>
+                    <td><span class="tag" th:text="${entry.category}">GROCERIES</span></td>
+                    <td th:text="${#temporals.format(entry.earnedOn, 'MMM d, yyyy')}">Jan 15, 2026</td>
+                    <td class="right points" th:text="|+${#numbers.formatInteger(entry.points, 1, 'COMMA')}|">+12</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">CARD ACTIVITY</p><h2>Transactions</h2></div>
+            <span class="count-pill" th:text="|${transactions.size()} transactions|">0 transactions</span></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Transaction</th><th>Merchant</th><th>Category</th><th>Type</th><th>Posted</th><th class="right">Amount</th></tr></thead>
+                <tbody>
+                <tr th:each="transaction : ${transactions}">
+                    <td th:text="${transaction.id}">reward-txn-001</td>
+                    <td><strong th:text="${transaction.merchant}">Northstar Market</strong>
+                        <small class="subline" th:if="${transaction.refundOf != null}" th:text="|Refund of ${transaction.refundOf}|">Refund</small></td>
+                    <td><span class="tag" th:text="${transaction.category}">GROCERIES</span></td>
+                    <td th:text="${transaction.type}">PURCHASE</td>
+                    <td th:text="${#temporals.format(transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</td>
+                    <td class="right amount" th:text="|$${#numbers.formatDecimal(transaction.amount, 1, 2)}|">$12.34</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
