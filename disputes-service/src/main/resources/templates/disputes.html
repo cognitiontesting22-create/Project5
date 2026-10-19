@@ -25,7 +25,7 @@
                     <td th:text="${dispute.transaction.card.cardmember.name}">Avery Morgan</td>
                     <td th:text="${dispute.transaction.merchant}">Northstar Market</td>
                     <td th:text="${#temporals.format(dispute.transaction.postingDate, 'MMM d, yyyy')}">Jan 15, 2026</td>
-                    <td><span class="status" th:classappend="${dispute.status.name() == 'OPEN'} ? ' status-open' : ' status-closed'" th:text="${dispute.status}">OPEN</span></td>
+                    <td><span class="status" th:classappend="| status-${#strings.toLowerCase(dispute.status.name())}|" th:text="${dispute.status.displayName}">Open</span></td>
                     <td class="right amount" th:text="|$${#numbers.formatDecimal(dispute.amount, 1, 2)}|">$24.99</td>
                 </tr>
                 <tr th:if="${disputes.isEmpty()}"><td class="empty" colspan="6">No disputes have been filed yet.</td></tr>

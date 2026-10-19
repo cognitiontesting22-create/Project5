@@ -40,7 +40,7 @@ class DisputesWebIntegrationTest {
     }
 
     @Test
-    void apiFilesDisputesAndAllowsRepeatedStatusFlips() throws Exception {
+    void apiEnforcesLifecycleAndReturnsResolutionNote() throws Exception {
         String response = mvc.perform(post("/api/disputes")
                         .contentType("application/json")
                         .content("""
@@ -53,17 +53,57 @@ class DisputesWebIntegrationTest {
 
         long id = com.fasterxml.jackson.databind.json.JsonMapper.builder().build()
                 .readTree(response).get("id").asLong();
+
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json")
+                        .content("{\"status\":\"RESOLVED_APPROVED\",\"resolutionNote\":\"Refund issued\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_TRANSITION"));
+        mvc.perform(get("/api/disputes/{id}", id))
+                .andExpect(jsonPath("$.status").value("OPEN"));
         mvc.perform(put("/api/disputes/{id}/status", id)
                         .contentType("application/json").content("{\"status\":\"CLOSED\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CLOSED"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
         mvc.perform(put("/api/disputes/{id}/status", id)
-                        .contentType("application/json").content("{\"status\":\"OPEN\"}"))
+                        .contentType("application/json").content("{\"status\":\"PENDING\"}"))
+                .andExpect(status().isBadRequest());
+
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("OPEN"));
+                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"));
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json").content("{\"status\":\"AWAITING_CARDMEMBER\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("AWAITING_CARDMEMBER"));
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UNDER_REVIEW"));
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json").content("{\"status\":\"RESOLVED_DENIED\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json")
+                        .content("{\"status\":\"RESOLVED_DENIED\",\"resolutionNote\":\"Merchant provided proof\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RESOLVED_DENIED"))
+                .andExpect(jsonPath("$.resolutionNote").value("Merchant provided proof"));
+        mvc.perform(put("/api/disputes/{id}/status", id)
+                        .contentType("application/json").content("{\"status\":\"UNDER_REVIEW\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("INVALID_TRANSITION"));
         mvc.perform(get("/api/disputes/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reason").value("Anything, even an arbitrary explanation"));
+                .andExpect(jsonPath("$.reason").value("Anything, even an arbitrary explanation"))
+                .andExpect(jsonPath("$.resolutionNote").value("Merchant provided proof"));
+        mvc.perform(get("/analyst/disputes/{id}", id))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Resolved in merchant")))
+                .andExpect(content().string(containsString("Merchant provided proof")))
+                .andExpect(content().string(containsString("This dispute is final")));
     }
 
     @Test
@@ -100,12 +140,29 @@ class DisputesWebIntegrationTest {
                         .param("reason", "Filed from the member desk"))
                 .andExpect(status().is3xxRedirection())
                 .andReturn().getResponse().getRedirectedUrl();
+        String disputeId = detailUrl.substring(detailUrl.lastIndexOf('/') + 1);
         mvc.perform(get("/analyst/disputes"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("disputes"));
         mvc.perform(get(detailUrl))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dispute"))
-                .andExpect(content().string(containsString("Filed from the member desk")));
+                .andExpect(content().string(containsString("Filed from the member desk")))
+                .andExpect(content().string(containsString("Under review")))
+                .andExpect(content().string(containsString("Withdrawn")));
+        mvc.perform(get("/cardmembers/member-01"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Your disputes")))
+                .andExpect(content().string(containsString("Withdraw")));
+        mvc.perform(post(detailUrl + "/status").param("status", "UNDER_REVIEW"))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get(detailUrl))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Awaiting cardmember")))
+                .andExpect(content().string(containsString("Resolution note")));
+        mvc.perform(post("/cardmembers/member-01/disputes/{id}/withdraw", disputeId))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/cardmembers/member-01"))
+                .andExpect(content().string(containsString("Withdrawn")));
     }
 }

@@ -13,6 +13,7 @@
 </header>
 <main class="shell">
     <p class="eyebrow"><a href="/">CARDMEMBERS</a> / PROFILE</p>
+    <p class="notice" th:if="${notice != null}" th:text="${notice}">Dispute updated.</p>
     <div class="page-heading">
         <div><h1 th:text="${cardmember.name}">Avery Morgan</h1><p class="lede" th:text="${cardmember.email}">member@cardbench.example</p></div>
         <span class="count-pill" th:text="|${cards.size()} cards|">1 card</span>
@@ -25,6 +26,29 @@
                 <strong th:text="${card.label}">Everyday card</strong>
                 <span class="muted" th:text="${card.id}">card-01</span>
             </div>
+        </div>
+    </section>
+    <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">CASE HISTORY</p><h2>Your disputes</h2></div></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Case</th><th>Merchant</th><th>Status</th><th>Resolution</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="dispute : ${disputes}">
+                    <td th:text="|DSP-${dispute.id}|">DSP-1</td>
+                    <td th:text="${dispute.transaction.merchant}">Northstar Market</td>
+                    <td><span class="status" th:classappend="| status-${#strings.toLowerCase(dispute.status.name())}|" th:text="${dispute.status.displayName}">Open</span></td>
+                    <td class="reason" th:text="${dispute.resolutionNote != null ? dispute.resolutionNote : '—'}">—</td>
+                    <td class="right" th:if="${dispute.status.canTransitionTo(T(com.cardbench.disputes.domain.DisputeStatus).WITHDRAWN)}">
+                        <form method="post" th:action="@{/cardmembers/{id}/disputes/{disputeId}/withdraw(id=${cardmember.id}, disputeId=${dispute.id})}">
+                            <button type="submit">Withdraw</button>
+                        </form>
+                    </td>
+                    <td th:unless="${dispute.status.canTransitionTo(T(com.cardbench.disputes.domain.DisputeStatus).WITHDRAWN)}"></td>
+                </tr>
+                <tr th:if="${disputes.isEmpty()}"><td class="empty" colspan="5">You have not filed any disputes.</td></tr>
+                </tbody>
+            </table>
         </div>
     </section>
     <section class="panel">
